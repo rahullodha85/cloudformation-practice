@@ -1,0 +1,50 @@
+Description: "Creates static resources - API Gateway and SQS FIFO Queue"
+Resources:
+  ##### API Gateway #####
+  APIGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: cf-api-gateway
+
+  APIGatewayRootReourceId:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: '/cf-test/api-gateway-root-resourceId'
+      Type: String
+      Description: Api gateway root resource id
+      Value: !GetAtt APIGateway.RootResourceId
+
+  ##### SQS FIFO Queue #####
+  SQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      ContentBasedDeduplication: false
+      FifoQueue: true
+      QueueName: cf-sqs-queue.fifo
+      MessageRetentionPeriod: 3600
+
+  SQSEndpointUrl:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: '/cf-test/sqs-endpoint-url'
+      Type: String
+      Description: SQS endpoint url
+      Value: !Sub
+        - https://sqs.${region}.amazonaws.com
+        - region: !Ref AWS::Region
+
+  SQSQueueUrl:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: '/cf-test/sqs-queue-url'
+      Type: String
+      Description: SQS queue url
+      Value: !Ref SQSQueue
+
+  SQSQueueArn:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: '/cf-test/sqs-queue-arn'
+      Type: String
+      Description: SQS queue arn
+      Value: !GetAtt SQSQueue.Arn
