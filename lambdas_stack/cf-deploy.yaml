@@ -1,0 +1,46 @@
+Transform: AWS::Serverless-2016-10-31
+
+Description: Deploys Python Lambdas as lambda versions to aws
+
+Parameters:
+  LambdaTimeout:
+    Type: Number
+    Default: 900
+  Version:
+    Type: String
+
+Resources:
+  CFAPILambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cf-api-lambda
+      Handler: main.handler
+      Runtime: python3.8
+      CodeUri: ./api_lambda
+      Timeout: !Ref LambdaTimeout
+      Role: !GetAtt CFAPILambdaRole.Arn
+      Environment:
+        Variables:
+          VERSION: !Ref Version
+
+  CFAPILambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cf-api-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  CFAPILambdaVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !GetAtt CFAPILambda.Arn
+      Description: !Ref Version
