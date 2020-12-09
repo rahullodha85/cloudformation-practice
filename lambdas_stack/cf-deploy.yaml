@@ -44,3 +44,65 @@ Resources:
     Properties:
       FunctionName: !GetAtt CFAPILambda.Arn
       Description: !Ref Version
+
+  CFAPILambdaAlias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !GetAtt CFAPILambda.Arn
+      FunctionVersion: !GetAtt CFAPILambdaVersion.Version
+      Name: !Ref Version
+
+  CFSQSLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cf-sqs-lambda
+      Handler: queue_processor.lambda_handler
+      CodeUri: ./sqs_lambda
+      Runtime: python3.8
+      Timeout: !Ref LambdaTimeout
+      Role: !GetAtt CFSQSLambdaRole.Arn
+      Environment:
+        Variables:
+          VERSION: !Ref Version
+
+  CFSQSLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cf-sqs-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+
+  CFSQSLambdaVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !GetAtt CFSQSLambda.Arn
+      Description: !Ref Version
+
+  CFSQSLambdaAlias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !GetAtt CFSQSLambda.Arn
+      FunctionVersion: !GetAtt CFSQSLambdaVersion.Version
+      Name: !Ref Version
+
+Outputs:
+  CFAPILambdaVersion:
+    Description: "cf-api-lambda alias"
+    Value: !Ref CFSQSLambdaAlias
+    Export:
+      Name: CFAPILambdaVersion
+  CFSQSLambdaVersion:
+    Description: "cf-sqs-lambda alias"
+    Value: !Ref CFAPILambdaAlias
+    Export:
+      Name: CFSQSLambdaVersion

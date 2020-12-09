@@ -16,3 +16,5 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides Version=${VERSION} \
   --s3-bucket ${S3_BUCKET}
+
+aws cloudformation list-exports
