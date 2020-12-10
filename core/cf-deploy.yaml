@@ -5,6 +5,9 @@ Resources:
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: cf-api-gateway
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
 
   APIGatewayRootReourceId:
     Type: AWS::SSM::Parameter
