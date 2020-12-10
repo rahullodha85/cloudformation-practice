@@ -1,0 +1,145 @@
+Transform: AWS::Serverless-2016-10-31
+
+Description: Deploys Python Lambdas as lambda versions to aws
+
+Parameters:
+  LambdaTimeout:
+    Type: Number
+    Default: 900
+  Version:
+    Type: String
+
+Resources:
+  ExternalDependenciesLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.8
+      LayerName: external-dependencies
+      Content: ./external_dependencies
+
+  CFAPILambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cf-api-lambda
+      Handler: main.handler
+      Runtime: python3.8
+      CodeUri: ./api_lambda
+      Timeout: !Ref LambdaTimeout
+      Role: !GetAtt CFAPILambdaRole.Arn
+      Layers:
+        - !Ref ExternalDependenciesLayer
+      Environment:
+        Variables:
+          VERSION: !Ref Version
+          SQS_ENDPOINT_URL: "{{resolve:ssm:/cf-test/sqs-endpoint-url:1}}"
+          QUEUE_URL: "{{resolve:ssm:/cf-test/sqs-queue-url:1}}"
+
+  CFAPILambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cf-api-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: cf-api-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: "{{resolve:ssm:/cf-test/sqs-queue-arn:1}}"
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: '*'
+
+  CFAPILambdaVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !GetAtt CFAPILambda.Arn
+      Description: !Ref Version
+
+  CFAPILambdaAlias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !GetAtt CFAPILambda.Arn
+      FunctionVersion: !GetAtt CFAPILambdaVersion.Version
+      Name: !Ref Version
+
+  CFSQSLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cf-sqs-lambda
+      Handler: queue_processor.lambda_handler
+      CodeUri: ./sqs_lambda
+      Runtime: python3.8
+      Timeout: !Ref LambdaTimeout
+      Role: !GetAtt CFSQSLambdaRole.Arn
+      Environment:
+        Variables:
+          VERSION: !Ref Version
+          SQS_ENDPOINT_URL: "{{resolve:ssm:/cf-test/sqs-endpoint-url:1}}"
+          QUEUE_URL: "{{resolve:ssm:/cf-test/sqs-queue-url:1}}"
+
+  CFSQSLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cf-sqs-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+      Policies:
+        - PolicyName: cf-api-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: '*'
+
+
+  CFSQSLambdaVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !GetAtt CFSQSLambda.Arn
+      Description: !Ref Version
+
+  CFSQSLambdaAlias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !GetAtt CFSQSLambda.Arn
+      FunctionVersion: !GetAtt CFSQSLambdaVersion.Version
+      Name: !Ref Version
+
+Outputs:
+  CFAPILambdaVersion:
+    Description: "cf-api-lambda alias"
+    Value: !Ref CFSQSLambdaAlias
+    Export:
+      Name: CFAPILambdaVersion
+  CFSQSLambdaVersion:
+    Description: "cf-sqs-lambda alias"
+    Value: !Ref CFAPILambdaAlias
+    Export:
+      Name: CFSQSLambdaVersion
