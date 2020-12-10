@@ -3,6 +3,8 @@ TEMPLATE=cf-deploy
 STACK_NAME=LambdaVersions
 S3_BUCKET=cf-templates-onmrt5w123ls-us-east-1
 
+pip install -r ./api_lambda/requirements.txt -t ./external_dependencies/python/lib/python3.8/site-packages
+
 aws cloudformation validate-template --template-body file://${TEMPLATE}.yaml || exit 1
 
 aws cloudformation package \

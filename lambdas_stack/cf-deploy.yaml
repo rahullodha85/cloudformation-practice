@@ -10,6 +10,14 @@ Parameters:
     Type: String
 
 Resources:
+  ExternalDependenciesLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.8
+      LayerName: external-dependencies
+      Content: ./external_dependencies
+
   CFAPILambda:
     Type: AWS::Serverless::Function
     Properties:
@@ -19,9 +27,13 @@ Resources:
       CodeUri: ./api_lambda
       Timeout: !Ref LambdaTimeout
       Role: !GetAtt CFAPILambdaRole.Arn
+      Layers:
+        - !Ref ExternalDependenciesLayer
       Environment:
         Variables:
           VERSION: !Ref Version
+          SQS_ENDPOINT_URL: "{{resolve:ssm:/cf-test/sqs-endpoint-url:1}}"
+          QUEUE_URL: "{{resolve:ssm:/cf-test/sqs-queue-url:1}}"
 
   CFAPILambdaRole:
     Type: AWS::IAM::Role
@@ -47,6 +59,10 @@ Resources:
                 Action:
                   - sqs:SendMessage
                 Resource: "{{resolve:ssm:/cf-test/sqs-queue-arn:1}}"
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: '*'
 
   CFAPILambdaVersion:
     Type: AWS::Lambda::Version
@@ -92,6 +108,16 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
         - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+      Policies:
+        - PolicyName: cf-api-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: '*'
+
 
   CFSQSLambdaVersion:
     Type: AWS::Lambda::Version

@@ -23,7 +23,7 @@ def lambda_handler(event, context):
         body = json.loads(record.get("body"))
         logger.info(f"Queue Message: {body}")
     except Exception as e:
-        logger.error(f"An error has occurred: {e}")
+        logger.error(f"An error has occurred, message: {e}")
     finally:
         sqs_client.delete_message(
             QueueUrl=os.getenv("QUEUE_URL"),
