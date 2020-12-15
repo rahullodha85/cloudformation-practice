@@ -37,12 +37,16 @@ Resources:
 
   CFAPILambdaVersion:
     Type: AWS::Lambda::Version
+    DeletionPolicy: Retain  # to retain existing version when underlying stack is deleted
+    UpdateReplacePolicy: Retain   # to retain existing version when deploying new version
     Properties:
       FunctionName: !GetAtt CFAPILambda.Arn
-      Description: !Ref Version
+      Description: cf-api-lambda version
 
   CFAPILambdaAlias:
     Type: AWS::Lambda::Alias
+    DeletionPolicy: Retain  # to retain existing alias when underlying stack is deleted
+    UpdateReplacePolicy: Retain   # to retain existing alias when deploying new alias
     Properties:
       FunctionName: !GetAtt CFAPILambda.Arn
       FunctionVersion: !GetAtt CFAPILambdaVersion.Version
@@ -65,25 +69,29 @@ Resources:
 
   CFSQSLambdaVersion:
     Type: AWS::Lambda::Version
+    DeletionPolicy: Retain  # to retain existing version when underlying stack is deleted
+    UpdateReplacePolicy: Retain   # to retain existing version when deploying new version
     Properties:
       FunctionName: !GetAtt CFSQSLambda.Arn
-      Description: !Ref Version
+      Description: cf-sqs-lambda version
 
   CFSQSLambdaAlias:
     Type: AWS::Lambda::Alias
+    DeletionPolicy: Retain  # to retain existing alias when underlying stack is deleted
+    UpdateReplacePolicy: Retain   # to retain existing alias when deploying new alias
     Properties:
       FunctionName: !GetAtt CFSQSLambda.Arn
       FunctionVersion: !GetAtt CFSQSLambdaVersion.Version
       Name: !Ref Version
 
 Outputs:
-  CFAPILambdaVersion:
+  CFAPILambdaAlias:
     Description: "cf-api-lambda alias"
     Value: !Ref CFSQSLambdaAlias
     Export:
-      Name: CFAPILambdaVersion
-  CFSQSLambdaVersion:
+      Name: CFAPILambdaAlias
+  CFSQSLambdaAlias:
     Description: "cf-sqs-lambda alias"
     Value: !Ref CFAPILambdaAlias
     Export:
-      Name: CFSQSLambdaVersion
+      Name: CFSQSLambdaAlias

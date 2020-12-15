@@ -15,11 +15,11 @@ logger = init_logger()
 
 
 def lambda_handler(event, context):
+    logger.info(f"SQS Lambda version: {os.getenv('VERSION')}")
     record = event.get("Records")[0]
     receipt_handle = record.get("receiptHandle")
     sqs_client = boto3.client("sqs", endpoint_url=os.getenv("SQS_ENDPOINT_URL"))
     try:
-
         body = json.loads(record.get("body"))
         logger.info(f"Queue Message: {body}")
     except Exception as e:

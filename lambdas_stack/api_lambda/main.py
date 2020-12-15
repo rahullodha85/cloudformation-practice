@@ -3,7 +3,6 @@ from fastapi import FastAPI, APIRouter
 from mangum import Mangum
 
 import endpoints
-
 app = FastAPI(title="MyApi")
 api_router = APIRouter()
 api_router.include_router(router=endpoints.router, prefix="/myapi")

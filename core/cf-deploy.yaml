@@ -9,6 +9,14 @@ Resources:
         Types:
           - REGIONAL
 
+  APIGatewayId:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: '/cf-test/api-gateway-id'
+      Type: String
+      Description: Api gateway id
+      Value: !Ref APIGateway
+
   APIGatewayRootReourceId:
     Type: AWS::SSM::Parameter
     Properties:
