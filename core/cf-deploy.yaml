@@ -5,6 +5,9 @@ Resources:
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: cf-api-gateway
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
 
   APIGatewayRootReourceId:
     Type: AWS::SSM::Parameter
@@ -13,6 +16,62 @@ Resources:
       Type: String
       Description: Api gateway root resource id
       Value: !GetAtt APIGateway.RootResourceId
+
+  ##### IAM Roles #####
+  CFAPILambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cf-api-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: cf-api-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt SQSQueue.Arn
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: '*'
+
+  CFSQSLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cf-sqs-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+      Policies:
+        - PolicyName: cf-api-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: '*'
 
   ##### SQS FIFO Queue #####
   SQSQueue:
@@ -48,3 +107,19 @@ Resources:
       Type: String
       Description: SQS queue arn
       Value: !GetAtt SQSQueue.Arn
+
+  CFAPILambdaIAMRole:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: '/cf-test/cf-api-lambda-iam-role'
+      Type: String
+      Description: cf-api-lambda-iam-role
+      Value: !GetAtt CFAPILambdaRole.Arn
+
+  CFSQSLambdaIAMRole:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: '/cf-test/cf-sqs-lambda-iam-role'
+      Type: String
+      Description: cf-sqs-lambda-iam-role
+      Value: !GetAtt CFSQSLambdaRole.Arn
