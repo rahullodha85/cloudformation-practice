@@ -1,0 +1,62 @@
+Transform: AWS::Serverless-2016-10-31
+Description: Maps lambda versions to api gateway and deploys it to a new stage
+
+Parameters:
+  APILambdaAliasArn:
+    Type: String
+  SQSLambdaAliasArn:
+    Type: String
+  StageName:
+    Type: String
+
+Resources:
+  APILambdaResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+      ParentId: "{{resolve:ssm:/cf-test/api-gateway-root-resourceId:1}}"
+      PathPart: myapi
+
+  APILambdaProxyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+      ParentId: !Ref APILambdaResource
+      PathPart: '{proxy+}'
+
+  ApiLambdaProxyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+      ResourceId: !Ref APILambdaProxyResource
+      HttpMethod: ANY
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${APILambdaAliasArn}/invocations
+
+  ApiGatewayStage:
+    DependsOn:
+      - ApiGatewayDeployment
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      RestApiId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+      StageName: !Ref StageName
+
+  ApiGatewayDeployment:
+    DependsOn:
+      - ApiLambdaProxyMethod
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+
+#  PreviewRecord:
+#    Type: AWS::Route53::RecordSet
+#    Properties:
+#      HostedZoneId: "{{resolve:ssm:/cf-test/hosted-zone-id}}"
+#      Name: preview.rahul-aws.com
+#      Region: !Ref AWS::Region
+#      Type: A
+#      TTL: '900'
