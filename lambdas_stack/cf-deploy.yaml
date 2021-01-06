@@ -22,7 +22,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: cf-api-lambda
-      AutoPublishAlias: !Ref Version
       Handler: main.handler
       Runtime: python3.8
       CodeUri: ./api_lambda
@@ -58,7 +57,6 @@ Resources:
     UpdateReplacePolicy: Retain
     Properties:
       FunctionName: cf-sqs-lambda
-      AutoPublishAlias: !Ref Version
       Handler: queue_processor.lambda_handler
       CodeUri: ./sqs_lambda
       Runtime: python3.8
@@ -69,6 +67,13 @@ Resources:
           VERSION: !Ref Version
           SQS_ENDPOINT_URL: "{{resolve:ssm:/cf-test/sqs-endpoint-url:1}}"
           QUEUE_URL: "{{resolve:ssm:/cf-test/sqs-queue-url:1}}"
+
+  CFAPILambdaAliasDeploy:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: "{{resolve:ssm:/cf-test/publish-alias-function-arn:1}}"
+      LambdaArn: !GetAtt CFAPILambda.Arn
+      AliasName: !Ref Version
 
 #  CFSQSLambdaVersion:
 #    Type: AWS::Lambda::Version
