@@ -1,0 +1,58 @@
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  PublishAliasFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cf-lambda-alias-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: PublishVersion
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:CreateAlias
+                  - lambda:PublishVersion
+                Resource: '*'
+
+  ExternalDependenciesLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.8
+      LayerName: external-dependencies
+      Content: ./external_dependencies
+
+  PublishAliasFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cf-publish-alias
+      Description: publishes alias of a lambda
+      CodeUri: ./alias_publisher
+      Handler: publisher.handler
+      Runtime: python3.8
+      Timeout: 900
+      Role: !GetAtt PublishAliasFunctionRole.Arn
+      Layers:
+        - !Ref ExternalDependenciesLayer
+
+  PublishAliasFunctionArn:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: '/cf-test/publish-alias-function-arn'
+      Type: String
+      Description: PublishAliasFunction Arn
+      Value: !GetAtt PublishAliasFunction.Arn

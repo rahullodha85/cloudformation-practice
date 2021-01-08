@@ -22,7 +22,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: cf-api-lambda
-      AutoPublishAlias: !Ref Version
       Handler: main.handler
       Runtime: python3.8
       CodeUri: ./api_lambda
@@ -36,29 +35,11 @@ Resources:
           SQS_ENDPOINT_URL: "{{resolve:ssm:/cf-test/sqs-endpoint-url:1}}"
           QUEUE_URL: "{{resolve:ssm:/cf-test/sqs-queue-url:1}}"
 
-#  CFAPILambdaVersion:
-#    Type: AWS::Lambda::Version
-#    DeletionPolicy: Retain  # to retain existing version when underlying stack is deleted
-#    UpdateReplacePolicy: Retain   # to retain existing version when deploying new version
-#    Properties:
-#      FunctionName: !GetAtt CFAPILambda.Arn
-#      Description: !Ref Version
-#
-#  CFAPILambdaAlias:
-#    Type: AWS::Lambda::Alias
-#    DeletionPolicy: Retain  # to retain existing alias when underlying stack is deleted
-#    UpdateReplacePolicy: Retain   # to retain existing alias when deploying new alias
-#    Properties:
-#      FunctionName: !GetAtt CFAPILambda.Arn
-#      FunctionVersion: !GetAtt CFAPILambdaVersion.Version
-#      Name: !Ref Version
-
   CFSQSLambda:
     Type: AWS::Serverless::Function
     UpdateReplacePolicy: Retain
     Properties:
       FunctionName: cf-sqs-lambda
-      AutoPublishAlias: !Ref Version
       Handler: queue_processor.lambda_handler
       CodeUri: ./sqs_lambda
       Runtime: python3.8
@@ -70,29 +51,19 @@ Resources:
           SQS_ENDPOINT_URL: "{{resolve:ssm:/cf-test/sqs-endpoint-url:1}}"
           QUEUE_URL: "{{resolve:ssm:/cf-test/sqs-queue-url:1}}"
 
-#  CFSQSLambdaVersion:
-#    Type: AWS::Lambda::Version
-#    DeletionPolicy: Retain  # to retain existing version when underlying stack is deleted
-#    UpdateReplacePolicy: Retain   # to retain existing version when deploying new version
-#    Properties:
-#      FunctionName: !GetAtt CFSQSLambda.Arn
-#      Description: cf-sqs-lambda version
+  CFAPILambdaAliasDeploy:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: "{{resolve:ssm:/cf-test/publish-alias-function-arn:1}}"
+      LambdaArn: !GetAtt CFAPILambda.Arn
+      AliasName: !Ref Version
 
-#  CFSQSLambdaAlias:
-#    Type: AWS::Lambda::Alias
-#    DeletionPolicy: Retain  # to retain existing alias when underlying stack is deleted
-#    UpdateReplacePolicy: Retain   # to retain existing alias when deploying new alias
-#    Properties:
-#      FunctionName: !GetAtt CFSQSLambda.Arn
-#      FunctionVersion: !GetAtt CFSQSLambdaVersion.Version
-#      Name: !Ref Version
-
-#Outputs:
-#  CFAPILambdaAlias:
-#    Description: "cf-api-lambda alias"
-#    Value: !Ref CFSQSLambdaAlias
-#    Export:
-#      Name: CFAPILambdaAlias
+Outputs:
+  CFAPILambdaAlias:
+    Description: "cf-api-lambda alias"
+    Value: !GetAtt CFAPILambdaAliasDeploy.alias
+    Export:
+      Name: CFAPILambdaAlias
 #  CFSQSLambdaAlias:
 #    Description: "cf-sqs-lambda alias"
 #    Value: !Ref CFAPILambdaAlias
