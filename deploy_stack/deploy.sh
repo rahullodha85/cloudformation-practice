@@ -2,7 +2,7 @@ APILambdaAliasArn=$1
 SQSLambdaAliasArn=$2
 StageName=$3
 TEMPLATE=cf-deploy
-STACK_NAME=deploy-stack-${StageName}
+STACK_NAME=deploy-stack
 S3_BUCKET=cf-templates-onmrt5w123ls-us-east-1
 
 aws cloudformation validate-template --template-body file://${TEMPLATE}.yaml || exit 1

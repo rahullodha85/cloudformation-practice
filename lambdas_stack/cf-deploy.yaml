@@ -58,14 +58,22 @@ Resources:
       LambdaArn: !GetAtt CFAPILambda.Arn
       AliasName: !Ref Version
 
+  CFSQSLambdaAliasDeploy:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: "{{resolve:ssm:/cf-test/publish-alias-function-arn:1}}"
+      LambdaArn: !GetAtt CFSQSLambda.Arn
+      AliasName: !Ref Version
+
 Outputs:
   CFAPILambdaAlias:
     Description: "cf-api-lambda alias"
     Value: !GetAtt CFAPILambdaAliasDeploy.alias
     Export:
       Name: CFAPILambdaAlias
-#  CFSQSLambdaAlias:
-#    Description: "cf-sqs-lambda alias"
-#    Value: !Ref CFAPILambdaAlias
-#    Export:
-#      Name: CFSQSLambdaAlias
+
+  CFSQSLambdaAlias:
+    Description: "cf-sqs-lambda alias"
+    Value: !GetAtt CFSQSLambdaAliasDeploy.alias
+    Export:
+      Name: CFSQSLambdaAlias

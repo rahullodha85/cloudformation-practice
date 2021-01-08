@@ -17,7 +17,7 @@ app_config = get_config()
 def health_check():
     logger.info("Health-check endpoint was called")
     return {
-        "api-status": "All Good!",
+        "api-status": "All Good! test",
         "version": app_config.VERSION
     }
 
