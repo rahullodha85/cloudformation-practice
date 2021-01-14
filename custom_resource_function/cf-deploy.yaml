@@ -103,3 +103,24 @@ Resources:
       Type: String
       Description: CreateStage function Arn
       Value: !GetAtt CreateStageFunction.Arn
+
+  SwitchAndCleanupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cf-switch-domain-mapping-and-cleanup
+      Description: switches domain mappings of preview and prod custom domains
+      CodeUri: ./switch_routes
+      Handler: switch_and_cleanup.handler
+      Runtime: python3.8
+      Timeout: 900
+      Role: !GetAtt CreateStageFunctionRole.Arn
+      Layers:
+        - !Ref ExternalDependenciesLayer
+
+  SwitchAndCleanupFunctionArn:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: '/cf-test/cf-switch-domain-mapping-and-cleanup-function-arn'
+      Type: String
+      Description: cf-switch-domain-mapping-and-cleanup function Arn
+      Value: !GetAtt SwitchAndCleanupFunction.Arn

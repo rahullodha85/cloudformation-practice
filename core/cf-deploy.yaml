@@ -90,6 +90,25 @@ Resources:
       QueueName: cf-sqs-queue.fifo
       MessageRetentionPeriod: 3600
 
+  ##### API Gateway Custom Domains #####
+  PreivewCustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: preview.rahul-aws.com
+      RegionalCertificateArn: "{{resolve:ssm:/cf-test/preview-cert:1}}"
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  ProdCustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: prod.rahul-aws.com
+      RegionalCertificateArn: "{{resolve:ssm:/cf-test/prod-cert:1}}"
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
   SQSEndpointUrl:
     Type: AWS::SSM::Parameter
     Properties:

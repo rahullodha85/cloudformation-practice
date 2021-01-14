@@ -8,6 +8,23 @@ Parameters:
     Type: String
   StageName:
     Type: String
+  PreviewDomainName:
+    Type: String
+    Default: preview.rahul-aws.com
+  ProdDomainName:
+    Type: String
+    Default: prod.rahul-aws.com
+#  SwitchRoutes:
+#    Type: String
+#    Default: No
+
+#Conditions:
+#  SwitchRoutesCondition: !Equals
+#    - !Ref SwitchRoutes
+#    - Yes
+#  DeployCondition: !Equals
+#    - !Ref SwitchRoutes
+#    - No
 
 Resources:
   APILambdaResource:
@@ -60,6 +77,15 @@ Resources:
       ServiceToken: "{{resolve:ssm:/cf-test/create-stage-function-arn:1}}"
       StageName: !Ref StageName
       ApiGatewayId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+
+  PreviewBasePathMapping:
+    DependsOn:
+      - ApiGatewayStage
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      RestApiId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+      Stage: !Ref StageName
+      DomainName: !Ref PreviewDomainName
 
 #  ApiGatewayStage:
 #    UpdateReplacePolicy: Retain
