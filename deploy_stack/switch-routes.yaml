@@ -1,0 +1,22 @@
+Transform: AWS::Serverless-2016-10-31
+Description: Maps lambda versions to api gateway and deploys it to a new stage
+
+Parameters:
+  StageToDelete:
+    Type: String
+  PreviewDomainName:
+    Type: String
+    Default: preview.rahul-aws.com
+  ProdDomainName:
+    Type: String
+    Default: prod.rahul-aws.com
+
+Resources:
+  SwitchRoutesMapping:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: "{{resolve:ssm:/cf-test/cf-switch-domain-mapping-and-cleanup-function-arn:1}}"
+      ApiGatewayId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+      PreviewDomainName: !Ref PreviewDomainName
+      ProdDomainName: !Ref ProdDomainName
+      StageToDelete: !Ref StageToDelete

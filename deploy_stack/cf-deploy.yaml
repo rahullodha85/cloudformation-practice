@@ -8,6 +8,23 @@ Parameters:
     Type: String
   StageName:
     Type: String
+  PreviewDomainName:
+    Type: String
+    Default: preview.rahul-aws.com
+  ProdDomainName:
+    Type: String
+    Default: prod.rahul-aws.com
+#  SwitchRoutes:
+#    Type: String
+#    Default: No
+
+#Conditions:
+#  SwitchRoutesCondition: !Equals
+#    - !Ref SwitchRoutes
+#    - Yes
+#  DeployCondition: !Equals
+#    - !Ref SwitchRoutes
+#    - No
 
 Resources:
   APILambdaResource:
@@ -36,21 +53,60 @@ Resources:
         IntegrationHttpMethod: POST
         Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${APILambdaAliasArn}/invocations
 
+  ApiLambdaPermission:
+    UpdateReplacePolicy: Retain
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref APILambdaAliasArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub
+        - arn:aws:execute-api:${REGION}:${ACCOUNT}:${API_GATEWAY_ID}/*/*/*
+        - REGION: !Ref AWS::Region
+          ACCOUNT: !Ref AWS::AccountId
+          API_GATEWAY_ID: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+
   ApiGatewayStage:
     DependsOn:
-      - ApiGatewayDeployment
-    Type: AWS::ApiGateway::Stage
-    Properties:
-      DeploymentId: !Ref ApiGatewayDeployment
-      RestApiId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
-      StageName: !Ref StageName
-
-  ApiGatewayDeployment:
-    DependsOn:
+      - APILambdaResource
+      - APILambdaProxyResource
       - ApiLambdaProxyMethod
-    Type: AWS::ApiGateway::Deployment
+      - ApiLambdaPermission
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: "{{resolve:ssm:/cf-test/create-stage-function-arn:1}}"
+      StageName: !Ref StageName
+      ApiGatewayId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+
+  PreviewBasePathMapping:
+    DependsOn:
+      - ApiGatewayStage
+    Type: AWS::ApiGateway::BasePathMapping
     Properties:
       RestApiId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+      Stage: !Ref StageName
+      DomainName: !Ref PreviewDomainName
+
+#  ApiGatewayStage:
+#    UpdateReplacePolicy: Retain
+#    DependsOn:
+#      - ApiGatewayDeployment
+#    Type: AWS::ApiGateway::Stage
+#    Properties:
+#      DeploymentId: !Ref ApiGatewayDeployment
+#      RestApiId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+#      StageName: !Ref StageName
+#
+#  ApiGatewayDeployment:
+#    UpdateReplacePolicy: Retain
+#    DependsOn:
+#      - ApiLambdaProxyMethod
+#    Type: AWS::ApiGateway::Deployment
+#    Properties:
+#      RestApiId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
+#      Description: !Sub
+#      - "Deployment to stage: ${STAGE_NAME}"
+#      - STAGE_NAME: !Ref StageName
 
 #  PreviewRecord:
 #    Type: AWS::Route53::RecordSet
@@ -60,3 +116,10 @@ Resources:
 #      Region: !Ref AWS::Region
 #      Type: A
 #      TTL: '900'
+
+Outputs:
+  Stage:
+    Description: "api gateway stage"
+    Value: !GetAtt ApiGatewayStage.stage
+    Export:
+      Name: CFAPIGatewayStage
