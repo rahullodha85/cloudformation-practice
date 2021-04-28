@@ -1,5 +1,5 @@
 TEMPLATE=cf-deploy
-STACK_NAME=publish-alias-lambda
+STACK_NAME=custom-resource-lambdas
 S3_BUCKET=cf-templates-onmrt5w123ls-us-east-1
 
 pip install -r ./requirements.txt -t ./external_dependencies/python/lib/python3.8/site-packages

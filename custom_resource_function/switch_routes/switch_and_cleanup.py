@@ -12,7 +12,6 @@ def delete_mapping(domain_name):
         basePath="(none)"
     )
 
-
 def delete_stage(stage_name, api_gateway_id):
     client = boto3.client('apigateway')
     print(f"Deleting stage: {stage_name}")
@@ -32,9 +31,9 @@ def handler(event, context):
     api_gateway_id = event.get("ResourceProperties", {}).get("ApiGatewayId")
     preview_domain_name = event.get("ResourceProperties", {}).get("PreviewDomainName")
     prod_domain_name = event.get("ResourceProperties", {}).get("ProdDomainName")
-    stage_to_delete = event.get("ResourceProperties", {}).get("StageToDelete")
+    # stage_to_delete = event.get("ResourceProperties", {}).get("StageToDelete")
     print(f"Request Type: {event.get('RequestType')}")
-    print(f"stage to delete: {stage_to_delete}")
+    # print(f"stage to delete: {stage_to_delete}")
     if event.get("RequestType") == "Delete":
         print(f"Delete Request: {event}")
         cfnresponse.send(
@@ -82,10 +81,18 @@ def handler(event, context):
                     stage=preview_stage_name,
                     basePath="(none)"  # for a blank basepath "(none)" value is required, refer to boto3 documentation
                 )
-                delete_stage(
-                    stage_name=stage_to_delete,
-                    api_gateway_id=api_gateway_id
-                )
+
+                stages_with_mappings = [preview_response.get("stage"), prod_response.get("stage")]
+                stages_with_mappings = set(stages_with_mappings)
+                all_stages = [item.get("stageName") for item in client.get_stages(restApiId=api_gateway_id).get("item")]
+                print(f"All available stages: {all_stages}")
+                stage_to_delete = [item for item in all_stages if item not in stages_with_mappings]
+                stage_to_delete = next(item for item in stage_to_delete) if len(stage_to_delete) > 0 else None
+                if stage_to_delete:
+                    delete_stage(
+                        stage_name=stage_to_delete,
+                        api_gateway_id=api_gateway_id
+                    )
             response_data = {
                 "preview_stage": preview_response.get("stage"),
                 "prod_stage": prod_response.get("stage")
