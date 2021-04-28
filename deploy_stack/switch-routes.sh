@@ -9,5 +9,5 @@ aws cloudformation deploy \
   --template-file ${TEMPLATE}.yaml \
   --stack-name ${STACK_NAME} \
   --capabilities CAPABILITY_NAMED_IAM \
-  --parameter-overrides StageToDelete=${StageToDelete} \
+  --parameter-overrides DateTimeStamp=$(date +%s) \
   --s3-bucket ${S3_BUCKET}

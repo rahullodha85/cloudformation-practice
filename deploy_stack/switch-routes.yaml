@@ -2,7 +2,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: Maps lambda versions to api gateway and deploys it to a new stage
 
 Parameters:
-  StageToDelete:
+  DateTimeStamp:
     Type: String
   PreviewDomainName:
     Type: String
@@ -19,4 +19,4 @@ Resources:
       ApiGatewayId: "{{resolve:ssm:/cf-test/api-gateway-id:1}}"
       PreviewDomainName: !Ref PreviewDomainName
       ProdDomainName: !Ref ProdDomainName
-      StageToDelete: !Ref StageToDelete
+      DateTimeStamp: !Ref DateTimeStamp
